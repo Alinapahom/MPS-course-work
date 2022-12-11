@@ -1,4 +1,4 @@
-#define F_CPU 8000000UL //частота работы ћ 
+#define F_CPU 8000000UL //частота работы МК
 #define BAUDRATE 9600L	//скорость передачи данных по usart
 
 #include <avr/io.h>
@@ -20,10 +20,10 @@
 #define B_PIN	PINC
 #define BUT		0
 
-char	data0[32];			//массив символов дл€ приема по usart0
-char	data1[32];			//массив символов дл€ приема по usart1
-char	buffer[32];			//массив дл€ вывода символов на дисплей
-char	queue[100][3] = {0};//массив дл€ хранени€ очереди
+char	data0[32];			//массив символов для приема по usart0
+char	data1[32];			//массив символов для приема по usart1
+char	buffer[32];			//массив для вывода символов на дисплей
+char	queue[100][3] = {0};//массив для хранения очереди
 uint8_t countCoupons = 0;	//кол-во талонов
 uint8_t currentCoupon = 0;	//текущий талон
 const char commandGetCount[] = "get count\r";
@@ -105,7 +105,7 @@ void LCD_setpos(unsigned char x, unsigned y)
 	}
 }
 
-//инициализаци€ диспле€
+//инициализация дисплея
 void LCD_init(void)
 {
 	stdout = &lcd;
@@ -127,14 +127,14 @@ void LCD_init(void)
 	_delay_ms(1);
 }
 
-//отчистка диспле€
+//отчистка дисплея
 void LCD_clear(void)
 {
 	LCD_sendbyte(0b00000001, 0);
 	_delay_us(1500);
 }
 
-//»нициализаци€ USART0
+//инициализация USART0
 void USART0_init()
 {
 	stderr = &usart0;
@@ -145,7 +145,7 @@ void USART0_init()
 	UCSR0B |= (1<<RXCIE);
 }
 
-//»нициализаци€ USART1
+//инициализация USART1
 void USART1_init()
 {
 	stdin = &usart1;
@@ -209,13 +209,13 @@ void USART1_receiving()
 //прерывание usart0
 ISR(USART0_RX_vect)
 {
-	USART0_receiving();
+	USART0_receiving(); //принятие данных
 
-	if (strcmp(data0, commandGetCount) == 0)
+	if (strcmp(data0, commandGetCount) == 0) //если была отправлена команда получить количество уже существующих талонов
 	{
-		fprintf(stderr, "%d%d\r", countCoupons / 10, countCoupons % 10);
+		fprintf(stderr, "%d%d\r", countCoupons / 10, countCoupons % 10); // по usart отправляем это количество (сначала передаем десятки, а потом единицы)
 	}
-	else
+	else //если не пришла команда, а пришло что-то другое, то есть например сам номер очереди, то мы в массив queue записываем 3 символа, которые пришли напр А21
 	{
 		queue[countCoupons][0] = data0[0];
 		queue[countCoupons][1] = data0[1];
@@ -225,7 +225,7 @@ ISR(USART0_RX_vect)
 		
 		if (countCoupons == 99)
 		{
-			countCoupons = 0;
+			countCoupons = 0; //обратно зануляем, то есть регулируем максимальное количество талонов, которые в данный момент может быть (Всего 100)
 		}
 	}
 }
@@ -257,8 +257,8 @@ ISR(USART1_RX_vect)
 //отображение очереди на дисплее
 void show_queue()
 {
-	LCD_setpos(0, 0);
-	printf("Current: %c%c%c", queue[currentCoupon][0], queue[currentCoupon][1], queue[currentCoupon][2]);
+	LCD_setpos(0, 0); // задаем координаты на первую строку первый символ 
+	printf("Current: %c%c%c", queue[currentCoupon][0], queue[currentCoupon][1], queue[currentCoupon][2]); //
 	
 	for (int i = 1; i < 4; i++)
 	{
