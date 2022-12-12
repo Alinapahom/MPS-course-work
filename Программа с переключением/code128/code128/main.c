@@ -1,15 +1,15 @@
-#define F_CPU 8000000UL //частота работы МК
+#define F_CPU 8000000UL //частота работы ћ 
 #define BAUDRATE 9600L	//скорость передачи данных по usart
 
-#include <avr/io.h> //Определения ввода-вывода для устройства AVR
-#include <util/delay.h> //удобные функции циклов задержки
-#include <avr/interrupt.h> //прерывания
+#include <avr/io.h>
+#include <util/delay.h>
+#include <avr/interrupt.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h> //для обработки строки 
+#include <string.h>
 
-#define LCD_DDR		DDRF				//порт дисплея
-#define LCD_PORT	PORTF				//порт дисплея
+#define LCD_DDR		DDRF				//порт диспле€
+#define LCD_PORT	PORTF				//порт диспле€
 #define E1			PORTF |= 0b00001000	//установка линии E в 1
 #define E0			PORTF &= 0b11110111	//установка линии E в 0
 #define RS1			PORTF |= 0b00000100 //установка линии RS в 1 (данные)
@@ -20,10 +20,10 @@
 #define B_PIN	PINC
 #define BUT		0
 
-char	data0[32];			//массив символов для приема по usart0
-char	data1[32];			//массив символов для приема по usart1
-char	buffer[32];			//массив для вывода символов на дисплей
-char	queue[100][3] = {0};//массив для хранения очереди
+char	data0[32];			//массив символов дл€ приема по usart0
+char	data1[32];			//массив символов дл€ приема по usart1
+char	buffer[32];			//массив дл€ вывода символов на дисплей
+char	queue[100][3] = {0};//массив дл€ хранени€ очереди
 uint8_t countCoupons = 0;	//кол-во талонов
 uint8_t currentCoupon = 0;	//текущий талон
 const char commandGetCount[] = "get count\r";
@@ -105,7 +105,7 @@ void LCD_setpos(unsigned char x, unsigned y)
 	}
 }
 
-//инициализация дисплея
+//инициализаци€ диспле€
 void LCD_init(void)
 {
 	stdout = &lcd;
@@ -127,14 +127,14 @@ void LCD_init(void)
 	_delay_ms(1);
 }
 
-//отчистка дисплея
+//отчистка диспле€
 void LCD_clear(void)
 {
 	LCD_sendbyte(0b00000001, 0);
 	_delay_us(1500);
 }
 
-//инициализация USART0
+//»нициализаци€ USART0
 void USART0_init()
 {
 	stderr = &usart0;
@@ -145,7 +145,7 @@ void USART0_init()
 	UCSR0B |= (1<<RXCIE);
 }
 
-//инициализация USART1
+//»нициализаци€ USART1
 void USART1_init()
 {
 	stdin = &usart1;
@@ -209,13 +209,15 @@ void USART1_receiving()
 //прерывание usart0
 ISR(USART0_RX_vect)
 {
-	USART0_receiving(); //принятие данных
+	USART0_receiving();
 
-	if (strcmp(data0, commandGetCount) == 0) //если была отправлена команда получить количество уже существующих талонов
+	if (strcmp(data0, commandGetCount) == 0)
 	{
-		fprintf(stderr, "%d%d\r", countCoupons / 10, countCoupons % 10); // по usart отправляем это количество (сначала передаем десятки, а потом единицы)
+		PORTE |= (1<<PE2);
+		fprintf(stderr, "%d%d\r", countCoupons / 10, countCoupons % 10);
+		PORTE &= ~(1<<PE2);
 	}
-	else //если не пришла команда, а пришло что-то другое, то есть например сам номер очереди, то мы в массив queue записываем 3 символа, которые пришли напр: А21
+	else
 	{
 		queue[countCoupons][0] = data0[0];
 		queue[countCoupons][1] = data0[1];
@@ -225,7 +227,7 @@ ISR(USART0_RX_vect)
 		
 		if (countCoupons == 99)
 		{
-			countCoupons = 0; //обратно зануляем, то есть регулируем максимальное количество талонов, которые в данный момент может быть (Всего 100)
+			countCoupons = 0;
 		}
 	}
 }
@@ -237,7 +239,9 @@ ISR(USART1_RX_vect)
 
 	if (strcmp(data1, commandGetCount) == 0)
 	{
+		PORTD |= (1<<PD4);
 		fprintf(stdin, "%d%d\r", countCoupons / 10, countCoupons % 10);
+		PORTD &= ~(1<<PD4);
 	}
 	else
 	{
@@ -257,8 +261,8 @@ ISR(USART1_RX_vect)
 //отображение очереди на дисплее
 void show_queue()
 {
-	LCD_setpos(0, 0); // задаем координаты на первую строку первый символ 
-	printf("Current: %c%c%c", queue[currentCoupon][0], queue[currentCoupon][1], queue[currentCoupon][2]); //
+	LCD_setpos(0, 0);
+	printf("Current: %c%c%c", queue[currentCoupon][0], queue[currentCoupon][1], queue[currentCoupon][2]);
 	
 	for (int i = 1; i < 4; i++)
 	{
@@ -292,6 +296,11 @@ int main(void)
 	
 	B_DDR = 0x00;
 	B_PORT = 0xff;
+	
+	DDRD |= (1<<PD4);
+	//PORTD = 0x00;
+	DDRE |= (1<<PE2);
+	//PORTE = 0x00;
 	
 	sei();
 

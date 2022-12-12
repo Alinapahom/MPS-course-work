@@ -27,9 +27,10 @@ uint8_t	count;			//полученное кол-во талонов
 // для того, чтобы работала функция fprintf
 static int LCD_putchar(char c, FILE *stream);  
 static int USART_putchar(char c, FILE *stream); // принимает символ char и указатель на поток
-static FILE lcd = FDEV_SETUP_STREAM(LCD_putchar, NULL, _FDEV_SETUP_WRITE); //настройка lcd, чтобы данные передавал в поток stdout
+static FILE lcd = FDEV_SETUP_STREAM(LCD_putchar, NULL, _FDEV_SETUP_WRITE); //настройка lcd, чтобы данные передавал в поток stdout //Библиотека avrlibc имеет встроенное средство для того, чтобы связать функцию вывода с выходными данными функции printf:
 static FILE usart = FDEV_SETUP_STREAM(USART_putchar, NULL, _FDEV_SETUP_WRITE); //настройка usart, чтобы данные передавал в поток stderr (для вывода ошибок)
-
+//Предоставляется макрос fdev_setup_stream(), чтобы подготовить предоставленный пользователем буфер FILE для работы с stdio
+//так что все инициализации данных выполняется кодом start-up подсистемы языка C
 
 //отправка полбайта в дисплей
 void LCD_sendhalfbyte(unsigned char c)
@@ -71,9 +72,9 @@ void LCD_sendchar(unsigned char c)
 //отправка символа по usart
 static int LCD_putchar(char c, FILE *stream)
 {
-	if (c == '\n')
+	if (c == '\n') //символ перевода строки 
 	{
-		LCD_putchar('\r', stream);
+		LCD_putchar('\r', stream); //символ возврата коретки(возвращение на начало строки)
 	}
 	
 	LCD_sendchar(c);
